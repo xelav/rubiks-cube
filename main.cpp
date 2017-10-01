@@ -40,7 +40,8 @@ Globals g;
 // Function prototypes.
 LRESULT CALLBACK WndProc( HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam );
 int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR szCmdLine, int iCmdShow );
-void draw();            // drawing function containing OpenGL function calls
+void draw();// drawing function containing OpenGL function calls
+void update();
 
 int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR szCmdLine, int iCmdShow ) {
     //////////////////
@@ -261,20 +262,30 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR szCmdLin
 #pragma region message loop
     MSG msg;
 
-    while( 1 )
+    bool running = true;
+    while( running )
     {
         if( PeekMessage( &msg, NULL, 0, 0, PM_REMOVE ) )
         {
-            if( msg.message == WM_QUIT )
+            switch (msg.message )
             {
-                break;
+                case WM_QUIT:
+                    running = false;
             }
 
             TranslateMessage( &msg );
             DispatchMessage( &msg );
+            /*
+            if (msg.message == WM_KEYDOWN) {
+                WPARAM param = msg.wParam;
+                char c = MapVirtualKey(param, MAPVK_VK_TO_CHAR);
+                update(msg.wParam);
+            }
+             */
         }
         else
         {
+            update();
             draw();
         }
     }
@@ -301,13 +312,52 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR szCmdLin
 }
 
 
+
 static int camRadius = 10;
 static float camAngle = M_PI / 3.5;
-static float camUpAngle = M_PI/2;
+static float camUpAngle = 0;
 static int camHeight = 5;
-static int camX = 0;
-static int camY = 0;
-static int camZ = 10;
+static float camX = 0;
+static float camY = 0;
+static float camZ = 10;
+
+void update(){
+
+    float translation_speed = 0.2f;
+    float rotation_speed = M_PI / 36;
+    float height_speed = 0.2f;
+
+
+    if( GetAsyncKeyState( 0x57 ) )
+        camY -= translation_speed;
+
+    if( GetAsyncKeyState( 0x53 ) )
+        camY += translation_speed ;
+
+    if( GetAsyncKeyState( 0x44 ) )
+        camX -= translation_speed;
+
+    if( GetAsyncKeyState( 0x41 ) )
+        camX += translation_speed;
+
+
+    if( GetAsyncKeyState( 0x5A ) )
+        camUpAngle += M_PI / 18;
+
+    if( GetAsyncKeyState( 0x58 ) )
+        camUpAngle -= M_PI / 18;
+
+
+    if( GetAsyncKeyState( 0x51 ))
+        camZ += height_speed;
+    if( GetAsyncKeyState( 0x45 ) and camZ > height_speed)
+        camZ -= height_speed;
+
+    if( GetAsyncKeyState( VK_SHIFT))
+        camAngle += rotation_speed/4;
+
+}
+
 void draw()
 {
     // 1. set up the viewport
@@ -321,7 +371,6 @@ void draw()
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     //gluPerspective(45.0,(float)g.width/(float)g.height, 1, 1000);
-    //gluOrtho2D(-(float)g.width/(float)g.height, (float)g.width/(float)g.height, -1.0, 1.0);
     glOrtho(-(camZ)+camX, camZ+camX, -camZ+camY, camZ+camY, -10.0, 1000.0);
 
     // 3. viewing transformation
@@ -402,12 +451,12 @@ LRESULT CALLBACK WndProc( HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam 
         */
 
         case WM_KEYDOWN: {
-            Beep( 50, 50 );
             switch( wparam )
             {
                 case VK_ESCAPE:
                     PostQuitMessage( 0 );
                     break;
+                    /*
                 case 0x41:
                     camX -= 1;
                     break;
@@ -433,8 +482,8 @@ LRESULT CALLBACK WndProc( HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam 
                     camZ += 1;
                     break;
                 default:
-
                     break;
+                     */
             }
             return 0;
         }
