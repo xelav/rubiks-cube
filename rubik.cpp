@@ -1,6 +1,18 @@
 #include "rubik.h"
 #include <GL/gl.h>
 
+class Color{
+    float r;
+    float g;
+    float b;
+    float a;
+
+
+    Color(float r, float g, float b, float a){
+
+    }
+};
+
 void draw_Cube_025_Cube_032() {
 
 	glBegin (GL_QUADS);

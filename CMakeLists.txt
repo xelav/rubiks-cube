@@ -14,6 +14,7 @@ set(HEADER_FILES rubik.h)
 
 add_library(mylib rubik.cpp ${HEADER_FILES})
 
+set(CMAKE_EXE_LINKER_FLAGS -static)
 set(SOURCE_FILES main.cpp rubik.h rubik.cpp)
 
 add_executable(untitled ${SOURCE_FILES})

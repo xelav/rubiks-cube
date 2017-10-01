@@ -302,8 +302,12 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR szCmdLin
 
 
 static int camRadius = 10;
-static float camAngle = M_PI / 4;
+static float camAngle = M_PI / 3.5;
+static float camUpAngle = M_PI/2;
 static int camHeight = 5;
+static int camX = 0;
+static int camY = 0;
+static int camZ = 10;
 void draw()
 {
     // 1. set up the viewport
@@ -316,15 +320,18 @@ void draw()
     // 2. projection matrix
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45.0,(float)g.width/(float)g.height, 1, 1000);
+    //gluPerspective(45.0,(float)g.width/(float)g.height, 1, 1000);
+    //gluOrtho2D(-(float)g.width/(float)g.height, (float)g.width/(float)g.height, -1.0, 1.0);
+    glOrtho(-(camZ)+camX, camZ+camX, -camZ+camY, camZ+camY, -10.0, 1000.0);
 
     // 3. viewing transformation
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
     gluLookAt(  cos(camAngle)*camRadius, camHeight, sin(camAngle)*camRadius,
+                //10, 10, 10,
                 0, 0, 0,
-                0, 1, 0);
+                sin(camUpAngle), cos(camUpAngle), 0);
 
     // 4. modelling transformation and drawing
     glClearColor( 0.2, 0.2, 0.2, 0 );
@@ -402,19 +409,31 @@ LRESULT CALLBACK WndProc( HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam 
                     PostQuitMessage( 0 );
                     break;
                 case 0x41:
-                    camAngle -= M_PI/45;
+                    camX -= 1;
                     break;
                 case 0x44:
-                    camAngle += M_PI/45;
+                    camX += 1;
                     break;
                 case 0x57:
-                    camHeight += 1;
+                    camY += 1;
                     break;
                 case 0x53:
-                    camHeight -= 1;
+                    camY -= 1;
+                    break;
+                case 0x5A: //Z
+                    camUpAngle += M_PI / 12;
+                    break;
+                case 0x58: // X
+                    camUpAngle -= M_PI / 12;
+                    break;
+                case 0x51: //Q
+                    camZ -= 1;
+                    break;
+                case 0x45: //E
+                    camZ += 1;
                     break;
                 default:
-                    //some_z -= 1;
+
                     break;
             }
             return 0;
