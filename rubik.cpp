@@ -1,17 +1,29 @@
 #include "rubik.h"
 #include <GL/gl.h>
 
+
+// TODO: implement this class
 class Color{
-    float r;
-    float g;
-    float b;
-    float a;
+    private:
+        float r;
+        float g;
+        float b;
+        float a;
 
+    public:
+        Color(float r, float g, float b, float a){
+            this->r = r;
+            this->g = g;
+            this->b = b;
+            this->a = a;
+        }
 
-    Color(float r, float g, float b, float a){
-
-    }
+        float getR(){return r;};
+        float getG(){return g;};
+        float getB(){return b;};
+        float getA(){return a;};
 };
+
 
 void draw_Cube_025_Cube_032() {
 
