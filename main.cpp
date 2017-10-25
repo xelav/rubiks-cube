@@ -155,7 +155,7 @@ public:
 
     void (*pDraw)();
 
-    float xAngle = 0, yAngle = 0, zAngle = 0;
+    float xAngle = 0, yAngle = 0, zAngle = 0, gimbalXAngle = 0;
 
     Model( void (*pDraw)() ) : xAngle(0), yAngle(0), zAngle(0), pDraw(pDraw) { }
 
@@ -163,30 +163,14 @@ public:
 
         glPushMatrix();
 
-        glRotatef(xAngle,1,0,0);
+
+
+        glRotated(xAngle,1,0,0);
         glRotatef(yAngle,0,1,0);
-        glRotatef(zAngle,0,0,1);
+        glRotated(zAngle,0,0,1);
+        glRotated(gimbalXAngle,1,0,0);
 
         pDraw(); // ???
-
-        glPopMatrix();
-
-    }
-
-    // FIXME:
-    void draw(bool r, bool g, bool b){
-
-        glPushMatrix();
-
-        glRotatef(xAngle,1,0,0);
-        glRotatef(yAngle,0,1,0);
-        glRotatef(zAngle,0,0,1);
-
-        glColorMask(r,g,b,0);
-
-        pDraw(); // ???
-
-        glColorMask(1,1,1,1);
 
         glPopMatrix();
 
@@ -230,11 +214,23 @@ public:
 
     }
 
-    void rotate(){
+    void rotate(bool verbose){
         for(int i=0; i<9; i++){
-            cubeArr[i]->zAngle += 90/10 * dirZ; // TODO: remove magic
-            cubeArr[i]->yAngle += 90/10 * dirY;
-            cubeArr[i]->xAngle += 90/10 * dirX;
+
+            float alpha  = M_PI*(cubeArr[i]->xAngle/180);
+            float beta   = M_PI*(cubeArr[i]->yAngle)/180;
+            float gamma  =M_PI*(cubeArr[i]->zAngle)/180;
+            float gimbal = M_PI*(cubeArr[i]->gimbalXAngle)/180;
+
+            if (verbose) {
+                printf("%d: %f -- %f -- %f        %f\n", i+1, alpha/M_PI, beta/M_PI, gamma/M_PI, gimbal/M_PI);
+            }
+
+            cubeArr[i]->xAngle += 90/15 * (dirX * 1 + dirY * 0 + dirZ * 0);
+            cubeArr[i]->yAngle += 90/15 * (dirX * 0 + dirY * cos(alpha) * cos(gamma) + dirZ * sin(alpha));
+            cubeArr[i]->zAngle += 90/15 * (dirX * 0 + dirY * 0 + dirZ * cos(beta)*cos(alpha));
+            cubeArr[i]->gimbalXAngle += 90/15 * dirZ * cos(M_PI+alpha) * sin(beta);
+
         }
     }
 
@@ -261,6 +257,7 @@ public:
     }
     
     void draw(){
+
         Top         ->draw();
         Bottom      ->draw();
         Left        ->draw();
@@ -270,21 +267,6 @@ public:
         BottomLeft  ->draw();
         BottomRight ->draw();
         Centre      ->draw();
-    }
-    
-    void test_draw(){
-
-        Top         ->draw(1,0,0);
-        Bottom      ->draw(0,0,0);
-        Left        ->draw(0,1,0);
-        Right       ->draw(1,1,1);
-
-        TopLeft     ->draw(1,0,0);
-        TopRight    ->draw(0,1,0);
-        BottomLeft  ->draw(0,0,1);
-        BottomRight ->draw();
-
-        //Centre      ->draw();
     }
 
 };
@@ -382,15 +364,18 @@ public:
     }
 
     void draw(){
+
         Top->draw();
         TopFront->draw();
         TopBack->draw();
         TopLeft->draw();
         TopRight->draw();
+
         TopFrontLeft->draw();
         TopFrontRight->draw();
         TopBackLeft->draw();
         TopBackRight->draw();
+
 
         MiddleFront->draw();
         MiddleBack->draw();
@@ -401,11 +386,14 @@ public:
         MiddleBackLeft->draw();
         MiddleBackRight->draw();
 
+
+
         Bottom->draw();
         BottomFront->draw();
         BottomBack->draw();
         BottomLeft->draw();
         BottomRight->draw();
+
         BottomFrontLeft->draw();
         BottomFrontRight->draw();
         BottomBackLeft->draw();
@@ -444,15 +432,15 @@ public:
         if (!step){
             step = 1;
             currentFace = face;
-            currentFace->rotate();
+            currentFace->rotate(true);
             }
     }
 
     void update() {
         if (step){
             step ++;
-            currentFace->rotate();
-            if (step >= 10){
+            currentFace->rotate(false);
+            if (step >= 15){
                 end();
             }
         }
@@ -462,6 +450,7 @@ public:
         step = 0;
         currentFace->turnCCW();
         currentFace = nullptr;
+        printf(" --- \n\n");
     }
 
 };
@@ -477,7 +466,7 @@ struct Globals
 };
 Globals g;
 
-// Function prototypes.
+
 LRESULT CALLBACK WndProc( HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam );
 int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR szCmdLine, int iCmdShow );
 
@@ -487,7 +476,6 @@ void init();
 void updateInput();
 void drawAxis();
 void drawXYGrid(float min, float max, float width);
-
 
 
 int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR szCmdLine, int iCmdShow ) {
@@ -650,7 +638,7 @@ static float camUpAngle = 0;
 static float camHeight = 5;
 
 
-static Animation& anim = Animation::getInstance();
+static Animation& animation = Animation::getInstance();
 
 static Model BottomBack       = Model(draw_Cube_025_Cube_032);
 static Model BottomFront      = Model(draw_Cube_024_Cube_031);
@@ -763,23 +751,25 @@ void updateInput(){
 
     // Rotate faces of Rubik's cube
     if( GetAsyncKeyState( 0x31)){
-        anim.begin(rubik.RightFace);
+        animation.begin(rubik.RightFace);
     }
     if( GetAsyncKeyState( 0x32)){
-        anim.begin(rubik.LeftFace);
+        animation.begin(rubik.LeftFace);
     }
     if( GetAsyncKeyState( 0x33)){
-        anim.begin(rubik.FrontFace);
+        animation.begin(rubik.FrontFace);
     }
     if( GetAsyncKeyState( 0x34)){
-        anim.begin(rubik.BackFace);
+        animation.begin(rubik.BackFace);
     }
+    /*
     if( GetAsyncKeyState( 0x35)){
-        anim.begin(rubik.TopFace);
+        animation.begin(rubik.TopFace);
     }
     if( GetAsyncKeyState( 0x36)){
-        anim.begin(rubik.BottomFace);
+        animation.begin(rubik.BottomFace);
     }
+     */
 
 }
 
@@ -804,18 +794,13 @@ void init(){
     glEnable (GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    //Animation::instance = anim;
-
 }
 
 void update(){
 
     updateInput();
 
-
-
-
-    anim.update();
+    animation.update();
 
 }
 
@@ -888,7 +873,7 @@ LRESULT CALLBACK WndProc( HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam 
             switch ( wparam )
             {
                 case VK_CONTROL:
-                    anim.begin(rubik.TopFace);
+                    animation.begin(rubik.TopFace);
             }
             return 0;
 
