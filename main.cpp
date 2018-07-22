@@ -3,151 +3,16 @@
 //#include <gl/glew.h>
 //#include <GL/glfw3.h>
 
-#include <windows.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <math.h>
 #include <gl/gl.h>
 #include <gl/glu.h>
+#include "main.h"
 #include "rubik.h"
 
 //#include "lib/glm/glm/glm.hpp"
 
 //#include <ft2build.h>
 //#include FT_FREETYPE_H
-
-class Quaternion{
-
-public:
-    Quaternion() : x(0.0), y(0.0), z(0.0), w(0.0) { };
-    Quaternion(float xi, float yi, float zi, float wi) : x(xi), y(yi), z(zi), w(wi) { };
-
-
-    Quaternion negate() {
-        return Quaternion(-this->x, -this->y, -this->z, this->w);
-    }
-
-    Quaternion& normalize() {
-        return (*this *= 1 / sqrt ( x*x + y*y + z*z + w*w ));
-    }
-
-    //! Faster method to create a rotation matrix, you should normalize the quaternion before!
-    void getMatrixFast(float dest[16]) const
-    {
-        // gpu quaternion skinning => fast Bones transform chain O_O YEAH!
-        // http://www.mrelusive.com/publications/papers/SIMD-From-Quaternion-to-Matrix-and-Back.pdf
-        dest[0] = 1.0f - 2.0f*y*y - 2.0f*z*z;
-        dest[1] = 2.0f*x*y + 2.0f*z*w;
-        dest[2] = 2.0f*x*z - 2.0f*y*w;
-        dest[3] = 0.0f;
-
-        dest[4] = 2.0f*x*y - 2.0f*z*w;
-        dest[5] = 1.0f - 2.0f*x*x - 2.0f*z*z;
-        dest[6] = 2.0f*z*y + 2.0f*x*w;
-        dest[7] = 0.0f;
-
-        dest[8] = 2.0f*x*z + 2.0f*y*w;
-        dest[9] = 2.0f*z*y - 2.0f*x*w;
-        dest[10] = 1.0f - 2.0f*x*x - 2.0f*y*y;
-        dest[11] = 0.0f;
-
-        dest[12] = 0.f;
-        dest[13] = 0.f;
-        dest[14] = 0.f;
-        dest[15] = 1.f;
-    }
-
-    void getMatrix(float dest[16]) const {
-        dest[0] = w*w + x*x - y*y - z*z;
-        dest[1] = 2.f*x*y + 2.f*w*z;
-        dest[2] = 2.f*x*z - 2.f*w*y;
-        dest[3] = 0.f;
-
-        dest[4] = 2.f*x*y - 2.f*w*z;
-        dest[5] = w*w - x*x + y*y - z*z;
-        dest[6] = 2.f*y*z + 2.f*w*x;
-        dest[7] = 0.f;
-
-        dest[8] = 2.f*x*z + 2.f*w*y;
-        dest[9] = 2.f*y*z - 2.f*w*x;
-        dest[10] = w*w - x*x - y*y + z*z;
-        dest[11] = 0.f;
-
-        dest[12] = 0.f;
-        dest[13] = 0.f;
-        dest[14] = 0.f;
-        dest[15] = 1.f;
-
-    }
-
-    bool isZero() {
-        return (this->x == 0 & this->y == 0 & this->z == 0 & this->w == 0);
-    }
-
-    // assignment operator
-    Quaternion operator = (const Quaternion& other)
-    {
-        x = other.x;
-        y = other.y;
-        z = other.z;
-        w = other.w;
-        return *this;
-    }
-
-// multiplication operator
-    inline Quaternion operator * (const Quaternion& other) const
-    {
-        Quaternion tmp;
-
-        tmp.w = (other.w * w) - (other.x * x) - (other.y * y) - (other.z * z) ;
-        tmp.x = (other.w * x) + (other.x * w) + (other.y * z) - (other.z * y);
-        tmp.y = (other.w * y) + (other.y * w) + (other.z * x) - (other.x * z);
-        tmp.z = (other.w * z) + (other.z * w) + (other.x * y) - (other.y * x);
-
-        return tmp;
-    }
-
-
-// multiplication operator
-    inline Quaternion operator * (float a) const
-    {
-        return Quaternion(a*x, a*y, a*z, a*w);
-    }
-
-
-// multiplication operator
-    inline Quaternion& operator *= (float a)
-    {
-        x*=a;
-        y*=a;
-        z*=a;
-        w*=a;
-        return *this;
-    }
-
-// multiplication operator
-
-    inline Quaternion operator *= (const Quaternion& other)
-    {
-        return (*this = other * (*this));
-    }
-
-
-// add operator
-    inline Quaternion operator + (const Quaternion& b) const
-    {
-        return Quaternion(x+b.x, y+b.y, z+b.z, w+b.w);
-    }
-
-    void print(){
-        printf("%f  %f  %f  %f\n",x,y,z,w);
-    }
-
-public:
-
-    float x, y, z, w;
-
-};
 
 class Model{
 
@@ -163,14 +28,12 @@ public:
 
         glPushMatrix();
 
-
-
         glRotated(xAngle,1,0,0);
         glRotatef(yAngle,0,1,0);
         glRotated(zAngle,0,0,1);
         glRotated(gimbalXAngle,1,0,0);
 
-        pDraw(); // ???
+        pDraw();
 
         glPopMatrix();
 
@@ -228,7 +91,7 @@ public:
 
             cubeArr[i]->xAngle += 90/15 * (dirX * 1 + dirY * 0 + dirZ * 0);
             cubeArr[i]->yAngle += 90/15 * (dirX * 0 + dirY * cos(alpha) * cos(gamma) + dirZ * sin(alpha));
-            cubeArr[i]->zAngle += 90/15 * (dirX * 0 + dirY * 0 + dirZ * cos(beta)*cos(alpha));
+            cubeArr[i]->zAngle += 90/15 * (dirX * 0 + dirY * 0 + dirZ * cos(beta)*cos(alpha) + dirZ * sin(beta)*cos(alpha) * sin(gamma)* sin(gimbal));
             cubeArr[i]->gimbalXAngle += 90/15 * dirZ * cos(M_PI+alpha) * sin(beta);
 
         }
@@ -387,7 +250,6 @@ public:
         MiddleBackRight->draw();
 
 
-
         Bottom->draw();
         BottomFront->draw();
         BottomBack->draw();
@@ -437,6 +299,7 @@ public:
     }
 
     void update() {
+        // TODO: make time-based
         if (step){
             step ++;
             currentFace->rotate(false);
@@ -456,187 +319,18 @@ public:
 };
 
 
-struct Globals
-{
-    HINSTANCE hInstance;    // window app instance
-    HWND hwnd;      // handle for the window
-    HDC   hdc;      // handle to device context
-    HGLRC hglrc;    // handle to OpenGL rendering context
-    int width, height;      // the desired width and
-};
-Globals g;
-
-
-LRESULT CALLBACK WndProc( HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam );
-int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR szCmdLine, int iCmdShow );
-
-void draw();
-void update();
-void init();
 void updateInput();
 void drawAxis();
 void drawXYGrid(float min, float max, float width);
-
-
-int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR szCmdLine, int iCmdShow ) {
-
-    g.hInstance = hInstance;
-
-#pragma region part 1 - create a window
-
-    WNDCLASS wc;
-    wc.cbClsExtra = 0;
-    wc.cbWndExtra = 0;
-    wc.hbrBackground = (HBRUSH) GetStockObject(BLACK_BRUSH);
-    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-    wc.hInstance = hInstance;
-    wc.lpfnWndProc = WndProc;
-    wc.lpszClassName = TEXT("Philip");
-    wc.lpszMenuName = 0;
-    wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-
-    // Register that class with the Windows O/S..
-    RegisterClass(&wc);
-
-    RECT rect;
-    SetRect(&rect, 50,  // left
-            50,  // top
-            850, // right
-            650); // bottom
-
-    // Save width and height off.
-    g.width = rect.right - rect.left;
-    g.height = rect.bottom - rect.top;
-
-    // Adjust it.
-    AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, false);
-
-    g.hwnd = CreateWindow(TEXT("Philip"),
-                          TEXT("GL WINDOW!"),
-                          WS_POPUP | WS_SIZEBOX | WS_CAPTION  ,
-                          rect.left, rect.top,  // adjusted x, y positions
-                          rect.right - rect.left, rect.bottom - rect.top,  // adjusted width and height
-                          NULL, NULL,
-                          hInstance, NULL);
-
-    if( g.hwnd == NULL )
-    {
-        FatalAppExit( 0, TEXT("CreateWindow() failed!") );
-    }
-
-    // and show.
-    ShowWindow( g.hwnd, iCmdShow );
-
-#pragma endregion
-
-    g.hdc = GetDC( g.hwnd );
-
-#pragma region part 3 - SET PIXEL FORMAT OF HDC
-    PIXELFORMATDESCRIPTOR pfd = { 0 };  // create the pfd,
-
-    pfd.nSize = sizeof( PIXELFORMATDESCRIPTOR );    // just its size
-    pfd.nVersion = 1;   // always 1
-
-    pfd.dwFlags = PFD_SUPPORT_OPENGL |  // OpenGL support - not DirectDraw
-                  PFD_DOUBLEBUFFER   |  // double buffering support
-                  PFD_DRAW_TO_WINDOW;   // draw to the app window, not to a bitmap image
-
-    pfd.iPixelType = PFD_TYPE_RGBA ;    // red, green, blue, alpha for each pixel
-    pfd.cColorBits = 24;                // 24 bit == 8 bits for red, 8 for green, 8 for blue.
-    // This count of color bits EXCLUDES alpha.
-
-    pfd.cDepthBits = 32;                // 32 bits to measure pixel depth.  That's accurate!
-
-    int chosenPixelFormat = ChoosePixelFormat( g.hdc, &pfd );
-
-    if( chosenPixelFormat == 0 )
-    {
-        FatalAppExit( 0, TEXT("ChoosePixelFormat() failed!") );
-    }
-
-    char b[100];
-    sprintf(b, "You got ID# %d as your pixelformat!\n", chosenPixelFormat);
-    MessageBoxA( NULL, b, "Your pixelformat", MB_OK );
-
-    int result = SetPixelFormat( g.hdc, chosenPixelFormat, &pfd );
-
-    if (result == NULL)
-    {
-        FatalAppExit( 0, TEXT("SetPixelFormat() failed!") );
-    }
-#pragma endregion
-
-#pragma region part 4 - CREATE THE RENDERING CONTEXT
-
-    g.hglrc = wglCreateContext( g.hdc );
-
-#pragma endregion
-
-#pragma region part 5 - CONNECT THE RENDERING CONTEXT WITH THE DEVICE CONTEXT OF THE WINDOW
-    wglMakeCurrent( g.hdc, g.hglrc );
-#pragma endregion
-
-#pragma region message loop
-
-    init();
-
-    MSG msg;
-
-    bool running = true;
-    while( running )
-    {
-        if( PeekMessage( &msg, NULL, 0, 0, PM_REMOVE ) )
-        {
-            switch (msg.message )
-            {
-                case WM_QUIT:
-                    running = false;
-            }
-
-            TranslateMessage( &msg );
-            DispatchMessage( &msg );
-            /*
-            if (msg.message == WM_KEYDOWN) {
-                WPARAM param = msg.wParam;
-                char c = MapVirtualKey(param, MAPVK_VK_TO_CHAR);
-                update(msg.wParam);
-            }
-             */
-        }
-        else
-        {
-            update();
-            draw();
-        }
-    }
-#pragma endregion
-
-    //////////////
-    // clean up
-#pragma region clean up
-    // UNmake your rendering context (make it 'uncurrent')
-    wglMakeCurrent( NULL, NULL );
-
-    // Delete the rendering context, we no longer need it.
-    wglDeleteContext( g.hglrc );
-
-    // release your window's DC
-    ReleaseDC( g.hwnd, g.hdc );
-#pragma endregion
-
-    AnimateWindow( g.hwnd, 200, AW_HIDE | AW_BLEND );
-
-    return msg.wParam;
-
-}
-
+GLuint loadBMP_custom(const char * imagepath);
 
 static float camRadius = 10;
 static float camAngle = M_PI / 3.5;
 static float camUpAngle = 0;
 static float camHeight = 5;
 
+static float lightRadius = 10;
+static float lightAngle = -M_PI /2;
 
 static Animation& animation = Animation::getInstance();
 
@@ -714,12 +408,117 @@ void drawXYGrid(float min=0, float max=100, float width=2){
     glEnd();
 }
 
+GLuint loadBMP_custom(const char * imagepath){
+
+    unsigned char header[54];
+    unsigned int dataPos;
+    unsigned int width, height;
+    unsigned int imageSize;
+    unsigned int bitsPerPixel, headerSize;
+
+    unsigned char * data;
+    unsigned char * qwer;
+
+    FILE * file = fopen( imagepath,"rb");
+    if (!file) {
+        printf("AA");
+        return 0;
+    }
+
+    if ( fread(header, 1, 54, file) != 54 ) { // Если мы прочитали меньше 54 байт, значит возникла проблема
+        printf("BB");
+        return 0;
+    }
+
+    if ( header[0]!='B' || header[1]!='M' ){
+        printf("CC");
+        return 0;
+    }
+
+    dataPos        = *(int*)&(header[0x0A]);
+    headerSize     = *(int*)&(header[0x0E]);
+    imageSize      = *(int*)&(header[0x22]);
+    width          = *(int*)&(header[0x12]);
+    height         = *(int*)&(header[0x16]);
+    bitsPerPixel   = *(short*)&(header[0x1C]);
+
+    if (headerSize != 40){
+        printf("DD");
+        return 0;
+    }
+    if (bitsPerPixel != 8){
+        printf("EE");
+        return 0;
+    }
+
+    if (imageSize==0)    imageSize=width*height;
+    if (dataPos==0)      dataPos=54;
+
+    // Создаем буфер
+    data = new unsigned char [imageSize];
+
+    fseek(file, dataPos, SEEK_SET);
+    fread(data, 1, imageSize, file);
+    fclose(file);
+
+    qwer = new unsigned char [imageSize*4]; // TODO: rename
+
+    for(int i = 0; i< imageSize; i++) {
+        unsigned char c = data[i];
+        qwer[i*4   ] = c;
+        qwer[i*4 +1] = c;
+        qwer[i*4 +2] = c;
+        qwer[i*4 +3] = 255;
+    }
+
+    // Создадим одну текстуру OpenGL
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    GLint FILTER_MODE = GL_NEAREST;
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+                    FILTER_MODE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                    FILTER_MODE);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width,
+                 height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 qwer);
+}
+
+void openfile() {
+
+    char filename[260];
+    OPENFILENAME ofn;
+    ZeroMemory( &filename, sizeof( filename ) );
+    ZeroMemory( &ofn,      sizeof( ofn ) );
+    ofn.lStructSize  = sizeof( ofn );
+    ofn.hwndOwner    = NULL;  // If you have a window to center over, put its HANDLE here
+    ofn.lpstrFilter  = "Text Files\0*.txt\0Any File\0*.*\0";
+    ofn.lpstrFile    = filename;
+    ofn.nMaxFile     = MAX_PATH;
+    ofn.lpstrTitle   = "Select a BMP texture";
+    ofn.Flags        = OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST;
+
+    if (GetOpenFileNameA( &ofn ))
+    {
+        std::cout << "You chose the file \"" << filename << "\"\n";
+        loadBMP_custom(filename);
+    }
+}
+
 void updateInput(){
 
     float translation_speed = 0.1f;
     float rotation_speed = M_PI / 72;
     float height_speed = 0.2f;
 
+    // https://msdn.microsoft.com/en-us/library/windows/desktop/dd375731(v=vs.85).aspx
 
     if( GetAsyncKeyState( 0x57 ) ) // W key
         camRadius -= translation_speed;
@@ -749,6 +548,9 @@ void updateInput(){
     if( GetAsyncKeyState( 0x45 )) // E key
         camHeight -= height_speed;
 
+    if (GetAsyncKeyState( 0x43)) // C key
+        lightAngle += rotation_speed;
+
     // Rotate faces of Rubik's cube
     if( GetAsyncKeyState( 0x31)){
         animation.begin(rubik.RightFace);
@@ -773,7 +575,39 @@ void updateInput(){
 
 }
 
-void init(){
+
+static GLubyte checkImage[64][64][4];
+
+void makeCheckImage(void)
+{
+    int i, j, c;
+    for (i = 0; i < 64; i++) {
+        for (j = 0; j < 64; j++) {
+            c = ((((i&0x8)==0)^((j&0x8))==0))*255;
+            checkImage[i][j][0] = (GLubyte) c;
+            checkImage[i][j][1] = (GLubyte) c;
+            checkImage[i][j][2] = (GLubyte) c;
+            checkImage[i][j][3] = (GLubyte) 255;
+        }
+    }
+}
+
+
+void makeCheckImage2(void) // TODO: properly name
+{
+    int i, j, c;
+    for (i = 0; i < 64; i++) {
+        for (j = 0; j < 64; j++) {
+            c =  (i*j % 2) * 255;
+            checkImage[i][j][0] = (GLubyte) c;
+            checkImage[i][j][1] = (GLubyte) c;
+            checkImage[i][j][2] = (GLubyte) c;
+            checkImage[i][j][3] = (GLubyte) 255;
+        }
+    }
+}
+
+void init(float window_width, float window_height){
 
     /*
     // Initialize Free Type library
@@ -788,11 +622,38 @@ void init(){
     //if (!glfwInit())
     //exit(EXIT_FAILURE);
 
+    GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+    GLfloat mat_shininess[] = { 50.0 };
 
     glClearColor( 0.2, 0.2, 0.2, 0 );
+
+    glShadeModel (GL_SMOOTH); // TODO
+
+    glEnable(GL_COLOR_MATERIAL);
+
+    glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+    glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+
     glEnable(GL_DEPTH_TEST);
     glEnable (GL_BLEND);
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+
+    glEnable(GL_NORMALIZE);
+    glEnable(GL_AUTO_NORMAL);
+
+    glEnable (GL_TEXTURE_2D);
+
+    GLuint Texture = loadBMP_custom("2.bmp");
+
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glViewport(0, 0, window_width, window_height);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    gluPerspective(45.0, window_width/window_height, 1, 1000);
 
 }
 
@@ -804,15 +665,27 @@ void update(){
 
 }
 
+void drawLight(){
+    GLfloat light_ambient[] = { 0.0, 0.0, 0.0, 1.0 };
+    GLfloat light_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
+    GLfloat light_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+    GLfloat light_position[] = { cos(lightAngle)*lightRadius, 1.0, sin(lightAngle)*lightRadius, 0.0 };
+
+    //glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+    //glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+    //glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+
+    glPointSize(10);
+    glBegin(GL_POINTS);
+    glColor3f(1.0,1.0,1.0);
+    glNormal3f(0.0,1.0,0.0);
+    glVertex3f(light_position[0], light_position[1], light_position[2]); // fixme
+    glEnd();
+}
+
 void draw()
 {
-    glViewport(0, 0, g.width, g.height);
-
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-
-    gluPerspective(45.0,(float)g.width/(float)g.height, 1, 1000);
-    //glOrtho(-(camZ)+camX, camZ+camX, -camZ+camY, camZ+camY, -100.0, 1000.0);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -823,13 +696,12 @@ void draw()
 
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
+    drawLight();
+
     rubik.draw();
 
     drawAxis();
     drawXYGrid(-100,100,2);
-
-    //7.  SWAP BUFFERS.
-    SwapBuffers(g.hdc);
 }
 
 
@@ -841,20 +713,6 @@ LRESULT CALLBACK WndProc( HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam 
             Beep( 2000, 50 );
             return 0;
             break;
-
-        /*
-        case WM_PAINT:
-        {
-            HDC hdc;
-            PAINTSTRUCT ps;
-            hdc = BeginPaint( hwnd, &ps );
-            // don't draw here.  would be waaay too slow.
-            // draw in the draw() function instead.
-            EndPaint( hwnd, &ps );
-        }
-            return 0;
-            break;
-        */
 
         case WM_KEYDOWN: {
             switch( wparam )
@@ -874,6 +732,9 @@ LRESULT CALLBACK WndProc( HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam 
             {
                 case VK_CONTROL:
                     animation.begin(rubik.TopFace);
+                    break;
+                case VK_F1:;
+                    openfile();
             }
             return 0;
 

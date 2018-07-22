@@ -22,9 +22,9 @@ include_directories(${OPENGL_INCLUDE_DIRS})
 
 set(CMAKE_EXE_LINKER_FLAGS -static)
 
-set(SOURCE_FILES main.cpp rubik.h rubik.cpp)
+set(SOURCE_FILES main.cpp rubik.h rubik.cpp window.cpp main.h)
 
-add_executable(untitled ${SOURCE_FILES})
+add_executable(untitled ${SOURCE_FILES} window.cpp)
 
 set (CMAKE_CXX_FLAGS "-L")
 
