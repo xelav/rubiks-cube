@@ -11,7 +11,7 @@ Project completed during a Computer Graphics course. Written in pure C++ using o
 - Rotating cube faces. Since I used Euler angles instead of quaternions only 4 rotation directions work correctly
 - Camera movement
 - Lighting
-- Dynamic texture loading
+- Dynamic texture loading from .bmp files
 - Horrible auto-generated `rubik.cpp` file. Please don't open it.
 
 ## Release
@@ -23,5 +23,5 @@ Controls:
 - WASD, QE, ZX - various camera controls
 - C - move light source
 - 1, 2, 3, 4 - rotate faces
-- F1 - load .bmp texture
+- F1 - load .bmp texture. Check `sample_textures` folder.
 - Ctrl - secret button to rotate top face
